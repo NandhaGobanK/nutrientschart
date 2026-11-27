@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   Check,
   Copy,
+  Download,
   Plus,
   RotateCcw,
   Search,
@@ -83,6 +84,7 @@ export function IngredientsPage({
     IngredientCategory | 'all'
   >('all');
   const [copiedBuyList, setCopiedBuyList] = useState(false);
+  const [downloadedBuyList, setDownloadedBuyList] = useState(false);
   const [boughtMap, setBoughtMap] = useState<Record<string, boolean>>(() => {
     try {
       const raw = localStorage.getItem(BOUGHT_STORAGE_KEY);
@@ -194,41 +196,75 @@ export function IngredientsPage({
     setBoughtMap((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const handleCopyBuyList = async () => {
-    const itemsToCopy = visibleBuyItems.filter((i) => !boughtMap[i.material.id]);
-    const source = itemsToCopy.length > 0 ? itemsToCopy : visibleBuyItems;
+  const buildBuyListText = () => {
+    const itemsToExport = visibleBuyItems.filter(
+      (i) => !boughtMap[i.material.id]
+    );
+    const source = itemsToExport.length > 0 ? itemsToExport : visibleBuyItems;
     const focusSuffix = activeSystemMeta
       ? ` — ${activeSystemMeta.label} Focus`
       : '';
+    const categorySuffix =
+      buyCategoryFilter !== 'all'
+        ? ` · ${CATEGORY_LABEL_MAP[buyCategoryFilter]}`
+        : '';
     const header =
       buyRange === 'today'
-        ? `Tamil Nadu Grocery List — Day ${selectedDay} (${goalLabel})${focusSuffix}`
+        ? `Tamil Nadu Grocery List — Day ${selectedDay} (${goalLabel}, ${dietLabel})${focusSuffix}${categorySuffix}`
         : buyRange === 'seven_days'
-        ? `Tamil Nadu Grocery List — 7 Days (${sevenDayRangeLabel}, ${goalLabel})${focusSuffix}`
+        ? `Tamil Nadu Grocery List — 7 Days (${sevenDayRangeLabel}, ${goalLabel}, ${dietLabel})${focusSuffix}${categorySuffix}`
         : buyRange === 'thirty_days'
-        ? `Tamil Nadu Grocery List — 30 Days (Days 1–30, ${goalLabel})${focusSuffix}`
-        : `Tamil Nadu Grocery List — Day ${selectedDay} & 7 Days (${sevenDayRangeLabel}, ${goalLabel})${focusSuffix}`;
+        ? `Tamil Nadu Grocery List — 30 Days (Days 1–30, ${goalLabel}, ${dietLabel})${focusSuffix}${categorySuffix}`
+        : `Tamil Nadu Grocery List — Day ${selectedDay} & 7 Days (${sevenDayRangeLabel}, ${goalLabel}, ${dietLabel})${focusSuffix}${categorySuffix}`;
 
     const lines = source.map((item) => {
+      const status = boughtMap[item.material.id] ? '[x]' : '[ ]';
       if (buyRange === 'today') {
-        return `- ${item.material.name}: ${item.todayFormatted}`;
+        return `${status} ${item.material.name} (${item.material.tamilName}): ${item.todayFormatted}`;
       }
       if (buyRange === 'seven_days') {
-        return `- ${item.material.name}: ${item.sevenDayFormatted}`;
+        return `${status} ${item.material.name} (${item.material.tamilName}): ${item.sevenDayFormatted}`;
       }
       if (buyRange === 'thirty_days') {
-        return `- ${item.material.name}: ${item.thirtyDayFormatted}`;
+        return `${status} ${item.material.name} (${item.material.tamilName}): ${item.thirtyDayFormatted}`;
       }
-      return `- ${item.material.name}: Today ${item.todayFormatted} | 7-Day ${item.sevenDayFormatted}`;
+      return `${status} ${item.material.name} (${item.material.tamilName}): Today ${item.todayFormatted} | 7-Day ${item.sevenDayFormatted}`;
     });
 
+    return [header, '', ...lines].join('\n');
+  };
+
+  const handleCopyBuyList = async () => {
     try {
-      await navigator.clipboard.writeText([header, '', ...lines].join('\n'));
+      await navigator.clipboard.writeText(buildBuyListText());
       setCopiedBuyList(true);
       setTimeout(() => setCopiedBuyList(false), 2000);
     } catch {
       // Ignore clipboard failures in restricted iframes
     }
+  };
+
+  const handleDownloadBuyList = () => {
+    const content = buildBuyListText();
+    const rangeSlug =
+      buyRange === 'both'
+        ? `day-${selectedDay}-and-7-days`
+        : buyRange === 'today'
+        ? `day-${selectedDay}`
+        : buyRange === 'seven_days'
+        ? '7-days'
+        : '30-days';
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `tn-grocery-list-${rangeSlug}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    setDownloadedBuyList(true);
+    setTimeout(() => setDownloadedBuyList(false), 2000);
   };
 
   const todayUsageList = useMemo(
@@ -360,6 +396,24 @@ export function IngredientsPage({
                 <>
                   <Copy className="w-3.5 h-3.5" aria-hidden="true" />
                   <span>Copy Buy List</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleDownloadBuyList}
+              className="inline-flex items-center gap-1.5 px-3 py-2 min-h-[38px] rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors whitespace-nowrap cursor-pointer"
+            >
+              {downloadedBuyList ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" aria-hidden="true" />
+                  <span>Downloaded</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>Download List</span>
                 </>
               )}
             </button>
