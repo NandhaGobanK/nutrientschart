@@ -46,6 +46,7 @@ export function RecipesPage({
   const [scope, setScope] = useState<RecipeScopeFilter>('both');
   const [searchQuery, setSearchQuery] = useState('');
   const [dietFilter, setDietFilter] = useState<DietType | 'all'>('all');
+  const [systemFilter, setSystemFilter] = useState<BodySystem | 'all'>('all');
 
   const todayRecipeEntries = useMemo(() => {
     const items: Array<{ slotLabel: string; food: FoodItem }> = [];
@@ -70,8 +71,36 @@ export function RecipesPage({
     [customFoods]
   );
 
-  const matchesSearchAndDiet = (food: FoodItem) => {
+  const activeSystemMeta = useMemo(
+    () =>
+      systemFilter === 'all'
+        ? null
+        : BODY_SYSTEMS.find((s) => s.id === systemFilter) || null,
+    [systemFilter]
+  );
+
+  const systemCounts = useMemo(() => {
+    const sourceFoods =
+      scope === 'today'
+        ? todayRecipeEntries.map((item) => item.food)
+        : allCatalogFoods;
+    const counts = {} as Record<BodySystem, number>;
+    for (const sys of BODY_SYSTEMS) {
+      counts[sys.id] = 0;
+    }
+    for (const food of sourceFoods) {
+      for (const sys of food.systems) {
+        counts[sys] = (counts[sys] || 0) + 1;
+      }
+    }
+    return counts;
+  }, [scope, todayRecipeEntries, allCatalogFoods]);
+
+  const matchesFilters = (food: FoodItem) => {
     if (dietFilter !== 'all' && food.dietType !== dietFilter) return false;
+    if (systemFilter !== 'all' && !food.systems.includes(systemFilter)) {
+      return false;
+    }
     const q = searchQuery.trim().toLowerCase();
     if (!q) return true;
     return (
@@ -82,13 +111,13 @@ export function RecipesPage({
   };
 
   const filteredToday = useMemo(
-    () => todayRecipeEntries.filter((item) => matchesSearchAndDiet(item.food)),
-    [todayRecipeEntries, searchQuery, dietFilter]
+    () => todayRecipeEntries.filter((item) => matchesFilters(item.food)),
+    [todayRecipeEntries, searchQuery, dietFilter, systemFilter]
   );
 
   const filteredAll = useMemo(
-    () => allCatalogFoods.filter(matchesSearchAndDiet),
-    [allCatalogFoods, searchQuery, dietFilter]
+    () => allCatalogFoods.filter(matchesFilters),
+    [allCatalogFoods, searchQuery, dietFilter, systemFilter]
   );
 
   const renderRecipeCard = (food: FoodItem, slotContext?: string) => {
@@ -121,6 +150,9 @@ export function RecipesPage({
           </p>
           <p className="mt-2 text-xs text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed">
             {food.note}
+          </p>
+          <p className="mt-2 text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
+            {food.systems.map((s) => SYSTEM_MAP[s]).join(' · ')}
           </p>
         </div>
 
@@ -236,6 +268,69 @@ export function RecipesPage({
             );
           })}
         </div>
+
+        {/* Filter Recipes by Body System */}
+        <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+              Filter Recipes by Body System
+            </span>
+            {systemFilter !== 'all' && (
+              <button
+                type="button"
+                onClick={() => setSystemFilter('all')}
+                className="text-xs font-medium text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer"
+              >
+                Reset system filter
+              </button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={() => setSystemFilter('all')}
+              aria-pressed={systemFilter === 'all'}
+              className={`px-2.5 py-1.5 min-h-[34px] rounded-lg border text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                systemFilter === 'all'
+                  ? 'bg-slate-900 border-slate-900 text-white dark:bg-emerald-600 dark:border-emerald-500'
+                  : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-slate-800/60 dark:border-slate-700 dark:text-slate-300'
+              }`}
+            >
+              All Systems (11)
+            </button>
+            {BODY_SYSTEMS.map((sys) => {
+              const active = systemFilter === sys.id;
+              const count = systemCounts[sys.id] || 0;
+              return (
+                <button
+                  key={sys.id}
+                  type="button"
+                  onClick={() => setSystemFilter(active ? 'all' : sys.id)}
+                  aria-pressed={active}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 min-h-[34px] rounded-lg border text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                    active
+                      ? 'bg-slate-900 border-slate-900 text-white dark:bg-emerald-600 dark:border-emerald-500'
+                      : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-slate-800/60 dark:border-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <span>{sys.shortLabel}</span>
+                  <span
+                    className={`font-mono-nums text-[11px] ${
+                      active ? 'text-slate-200' : 'text-slate-500 dark:text-slate-400'
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {activeSystemMeta && (
+            <p className="mt-2 text-xs text-emerald-800 dark:text-emerald-300">
+              Focused on <strong>{activeSystemMeta.label}</strong>: {activeSystemMeta.description}
+            </p>
+          )}
+        </div>
       </section>
 
       {/* Section 1: Today's Recipes */}
@@ -248,13 +343,29 @@ export function RecipesPage({
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Dishes scheduled in your active Day {selectedDay} menu ({filteredToday.length} items)
+                {activeSystemMeta ? ` · ${activeSystemMeta.label}` : ''}
               </p>
             </div>
           </div>
 
           {filteredToday.length === 0 ? (
-            <div className="p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#161E1B] text-center text-sm text-slate-500 dark:text-slate-400">
-              No recipes in Today&apos;s menu match your current search or category filter.
+            <div className="p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#161E1B] text-center space-y-2">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                No recipes in Today&apos;s menu match your current search, category, or body-system filter.
+              </p>
+              {(dietFilter !== 'all' || systemFilter !== 'all' || searchQuery) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDietFilter('all');
+                    setSystemFilter('all');
+                    setSearchQuery('');
+                  }}
+                  className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer"
+                >
+                  Clear filters
+                </button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -276,13 +387,29 @@ export function RecipesPage({
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Complete budget-friendly Tamil Nadu veg, millet, and non-veg recipe library ({Object.keys(SYSTEM_MAP).length} body systems covered)
+                {activeSystemMeta ? ` · Focused on ${activeSystemMeta.label}` : ''}
               </p>
             </div>
           </div>
 
           {filteredAll.length === 0 ? (
-            <div className="p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#161E1B] text-center text-sm text-slate-500 dark:text-slate-400">
-              No recipes match your current search or category filter.
+            <div className="p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#161E1B] text-center space-y-2">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                No recipes match your current search, category, or body-system filter.
+              </p>
+              {(dietFilter !== 'all' || systemFilter !== 'all' || searchQuery) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDietFilter('all');
+                    setSystemFilter('all');
+                    setSearchQuery('');
+                  }}
+                  className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer"
+                >
+                  Clear filters
+                </button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
