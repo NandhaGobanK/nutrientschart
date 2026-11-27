@@ -1,0 +1,8 @@
+{
+  "name": "Tamil Nadu Daily Wellness & Nutrition Tracker",
+  "description": "A 30-day Tamil Nadu full-body wellness and cognitive focus meal tracker built around budget-friendly local ingredients, macro/micronutrient analytics, and organ system coverage.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

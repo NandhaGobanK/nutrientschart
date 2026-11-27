@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tamil Nadu Daily Wellness &amp; Nutrition Tracker</title>
+    <meta
+      name="description"
+      content="A 30-day Tamil Nadu full-body wellness and cognitive focus meal tracker built around budget-friendly local ingredients, macro/micronutrient analytics, and organ system coverage."
+    />
+    <meta property="og:title" content="Tamil Nadu Daily Wellness &amp; Nutrition Tracker" />
+    <meta
+      property="og:description"
+      content="Track 30 days of budget-friendly Tamil Nadu meals for brain focus, fertility, heart, bones, lungs, and eyes with live nutrient breakdowns."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('tn-wellness-theme');
+          if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body class="bg-[#F7F8F6] text-slate-900 dark:bg-[#0D1210] dark:text-slate-100 antialiased selection:bg-emerald-200 selection:text-emerald-950 dark:selection:bg-emerald-800 dark:selection:text-emerald-50">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
