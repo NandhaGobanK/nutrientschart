@@ -10,6 +10,7 @@ import {
   Search,
   ShoppingBag,
 } from 'lucide-react';
+import { DayPlanFilterBar } from './DayPlanFilterBar';
 import {
   computeShoppingBuyList,
   extractTodayIngredients,
@@ -32,11 +33,14 @@ import { getDayPlan, getEffectiveMealsForDay } from '../utils/nutritionCalc';
 
 interface IngredientsPageProps {
   selectedDay: number;
+  todayDay: number;
   weightGoal: WeightGoalMode;
   dietMode: DietMode;
   daysState: Record<number, DayProgressState>;
   effectiveMeals: Record<MealSlotId, MealSlotEntry[]>;
   foodLookup: Record<string, FoodItem>;
+  onSelectDay: (day: number) => void;
+  onJumpToToday: () => void;
   onQuickAddFoodToDay: (foodId: string, slotId: MealSlotId) => void;
   onBackToTracker: () => void;
 }
@@ -60,11 +64,14 @@ const SLOT_LABEL_MAP = Object.fromEntries(
 
 export function IngredientsPage({
   selectedDay,
+  todayDay,
   weightGoal,
   dietMode,
   daysState,
   effectiveMeals,
   foodLookup,
+  onSelectDay,
+  onJumpToToday,
   onQuickAddFoodToDay,
   onBackToTracker,
 }: IngredientsPageProps) {
@@ -429,6 +436,15 @@ export function IngredientsPage({
           </div>
         </div>
 
+        {/* Day Plan Filter (Days 1-30) */}
+        <DayPlanFilterBar
+          selectedDay={selectedDay}
+          todayDay={todayDay}
+          label="Filter Buy List & Ingredients by Day Plan"
+          onSelectDay={onSelectDay}
+          onJumpToToday={onJumpToToday}
+        />
+
         {/* Buy List Controls: Period Switcher + Category Filter + Uncheck */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
           <div
@@ -446,7 +462,7 @@ export function IngredientsPage({
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              Today + 7 Days
+              Day {selectedDay} + 7 Days
             </button>
             <button
               type="button"
@@ -458,7 +474,7 @@ export function IngredientsPage({
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              Today Only ({todayBuyCount})
+              {selectedDay === todayDay ? 'Today Only' : `Day ${selectedDay} Only`} ({todayBuyCount})
             </button>
             <button
               type="button"
@@ -843,7 +859,9 @@ export function IngredientsPage({
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              Today&apos;s Items ({todayUsageList.length})
+              {selectedDay === todayDay
+                ? `Today's Items (${todayUsageList.length})`
+                : `Day ${selectedDay} Items (${todayUsageList.length})`}
             </button>
             <button
               type="button"

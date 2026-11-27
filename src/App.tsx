@@ -475,20 +475,26 @@ export default function App() {
         {activePage === 'recipes' ? (
           <RecipesPage
             selectedDay={tracker.selectedDay}
+            todayDay={tracker.todayDay}
             effectiveMeals={effectiveMeals}
             foodLookup={foodLookup}
             customFoods={tracker.customFoods}
+            onSelectDay={handleSelectDay}
+            onJumpToToday={handleJumpToToday}
             onSelectRecipe={setSelectedRecipeFood}
             onBackToTracker={() => setActivePage('tracker')}
           />
         ) : activePage === 'ingredients' ? (
           <IngredientsPage
             selectedDay={tracker.selectedDay}
+            todayDay={tracker.todayDay}
             weightGoal={tracker.weightGoal}
             dietMode={tracker.dietMode}
             daysState={tracker.days}
             effectiveMeals={effectiveMeals}
             foodLookup={foodLookup}
+            onSelectDay={handleSelectDay}
+            onJumpToToday={handleJumpToToday}
             onQuickAddFoodToDay={handleQuickAddFoodToDay}
             onBackToTracker={() => setActivePage('tracker')}
           />

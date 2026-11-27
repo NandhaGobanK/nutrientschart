@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { BookOpen, Clock, Search } from 'lucide-react';
+import { DayPlanFilterBar } from './DayPlanFilterBar';
 import { getRecipeForFood } from '../data/recipes';
 import { BODY_SYSTEMS, MEAL_SLOTS, TN_FOODS } from '../data/tnFoods';
 import {
@@ -12,9 +13,12 @@ import {
 
 interface RecipesPageProps {
   selectedDay: number;
+  todayDay: number;
   effectiveMeals: Record<MealSlotId, MealSlotEntry[]>;
   foodLookup: Record<string, FoodItem>;
   customFoods: FoodItem[];
+  onSelectDay: (day: number) => void;
+  onJumpToToday: () => void;
   onSelectRecipe: (food: FoodItem) => void;
   onBackToTracker: () => void;
 }
@@ -37,9 +41,12 @@ const SYSTEM_MAP = Object.fromEntries(
 
 export function RecipesPage({
   selectedDay,
+  todayDay,
   effectiveMeals,
   foodLookup,
   customFoods,
+  onSelectDay,
+  onJumpToToday,
   onSelectRecipe,
   onBackToTracker,
 }: RecipesPageProps) {
@@ -191,8 +198,17 @@ export function RecipesPage({
           </button>
         </div>
 
-        {/* Section Scope Filter: Today's Recipes vs All Recipes */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+        {/* Day Plan Filter (Days 1-30) */}
+        <DayPlanFilterBar
+          selectedDay={selectedDay}
+          todayDay={todayDay}
+          label="Filter Recipes by Day Plan"
+          onSelectDay={onSelectDay}
+          onJumpToToday={onJumpToToday}
+        />
+
+        {/* Section Scope Filter: Selected Day Plan Recipes vs All Recipes */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
           <div
             role="group"
             aria-label="Filter recipe sections"
@@ -218,7 +234,9 @@ export function RecipesPage({
                   : 'text-slate-600 dark:text-slate-300'
               }`}
             >
-              Today&apos;s Recipes Only ({filteredToday.length})
+              {selectedDay === todayDay
+                ? `Today's Recipes Only (${filteredToday.length})`
+                : `Day ${selectedDay} Plan Only (${filteredToday.length})`}
             </button>
             <button
               type="button"
@@ -333,16 +351,18 @@ export function RecipesPage({
         </div>
       </section>
 
-      {/* Section 1: Today's Recipes */}
+      {/* Section 1: Selected Day Plan Recipes */}
       {(scope === 'both' || scope === 'today') && (
-        <section aria-label="Today's recipes" className="space-y-3">
+        <section aria-label="Selected day plan recipes" className="space-y-3">
           <div className="flex items-baseline justify-between gap-2">
             <div>
               <h2 className="font-display text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-50">
-                Today&apos;s Recipes (Day {selectedDay})
+                {selectedDay === todayDay
+                  ? `Today's Recipes (Day ${selectedDay})`
+                  : `Day ${selectedDay} Plan Recipes`}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Dishes scheduled in your active Day {selectedDay} menu ({filteredToday.length} items)
+                Dishes scheduled in Day {selectedDay} menu ({filteredToday.length} items)
                 {activeSystemMeta ? ` · ${activeSystemMeta.label}` : ''}
               </p>
             </div>
